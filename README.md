@@ -104,12 +104,13 @@ python src/main.py
 
 ```powershell
 pip install -r requirements.txt
-python -m nuitka --onefile --windows-disable-console --enable-plugin=tkinter --windows-icon-from-ico=icon.ico --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
+python -m nuitka --onefile --windows-console-mode=hide --mingw64 --enable-plugin=tkinter --windows-icon-from-ico=icon.ico --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
 ```
 
 產出：`dist/TrustmeAntivirus.exe`
 
-> 首次編譯會自動下載 MinGW64 編譯器，需較長時間；之後有快取會快很多。
+> 首次編譯會自動下載編譯器，需較長時間；之後有快取會快很多。
+> 注意：Python 3.12（含）以下使用 `--mingw64`；Python 3.13 以上請改用 `--zig`。
 
 ## Windows SmartScreen 說明（重要）
 
