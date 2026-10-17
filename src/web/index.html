@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TrustmeAntivirus - 系統安全防禦</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="dark">
+
+  <!-- 頂部欄 -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">🛡️</div>
+      <div>
+        <h1>TrustmeAntivirus</h1>
+        <p class="slogan">Trust me, Your System is Safe.</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span id="status-badge" class="badge idle">● 就緒</span>
+      <button id="theme-btn" class="btn ghost small" title="切換主題">🌙</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- 側邊導航 -->
+    <nav class="sidebar">
+      <button class="nav-item active" data-page="dashboard">📊 儀表板</button>
+      <button class="nav-item" data-page="scan">🔍 掃描</button>
+      <button class="nav-item" data-page="quarantine">🚧 隔離區 <span id="quarantine-count" class="pill">0</span></button>
+      <button class="nav-item" data-page="history">📜 歷史記錄</button>
+      <button class="nav-item" data-page="settings">⚙️ 設定</button>
+      <div class="sidebar-footer">
+        <span id="ver-label">v1.0.0</span>
+      </div>
+    </nav>
+
+    <!-- 主內容 -->
+    <main class="content">
+
+      <!-- 儀表板 -->
+      <section id="page-dashboard" class="page active">
+        <h2>📊 儀表板</h2>
+        <div class="cards">
+          <div class="card">
+            <span class="card-icon">📁</span>
+            <div>
+              <div class="card-value" id="d-total">0</div>
+              <div class="card-label">總掃描檔案</div>
+            </div>
+          </div>
+          <div class="card">
+            <span class="card-icon">⚠️</span>
+            <div>
+              <div class="card-value" id="d-risks">0</div>
+              <div class="card-label">風險檔案</div>
+            </div>
+          </div>
+          <div class="card">
+            <span class="card-icon">✅</span>
+            <div>
+              <div class="card-value" id="d-safe">0</div>
+              <div class="card-label">安全檔案</div>
+            </div>
+          </div>
+          <div class="card">
+            <span class="card-icon">🚧</span>
+            <div>
+              <div class="card-value" id="d-quarantined">0</div>
+              <div class="card-label">隔離中</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-grid">
+          <div class="panel">
+            <h3>💻 系統資訊</h3>
+            <table class="info-table" id="sysinfo-table"></table>
+          </div>
+          <div class="panel">
+            <h3>🛡️ 防護狀態</h3>
+            <div class="protection-status">
+              <div class="protect-item">
+                <span>本地黑名單</span>
+                <span id="p-blacklist" class="on">啟用</span>
+              </div>
+              <div class="protect-item">
+                <span>VirusTotal 雲端</span>
+                <span id="p-vt" class="off">未設定</span>
+              </div>
+              <div class="protect-item">
+                <span>NVIDIA AI 智慧檢查</span>
+                <span id="p-nvidia" class="off">未設定</span>
+              </div>
+              <div class="protect-item">
+                <span>自動背景檢查</span>
+                <span id="p-auto" class="off">停用</span>
+              </div>
+              <div class="protect-item">
+                <span>上次掃描</span>
+                <span id="p-lastscan">尚未掃描</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 掃描 -->
+      <section id="page-scan" class="page">
+        <h2>🔍 掃描</h2>
+        <div class="panel">
+          <div class="scan-controls">
+            <input type="text" id="folder-input" class="input" placeholder="請選擇或輸入要掃描的資料夾路徑…">
+            <button id="browse-btn" class="btn">📂 瀏覽</button>
+          </div>
+          <div class="scan-options">
+            <label class="radio">
+              <input type="radio" name="mode" value="full" checked>
+              <span>完整掃描（所有檔案）</span>
+            </label>
+            <label class="radio">
+              <input type="radio" name="mode" value="quick">
+              <span>快速掃描（僅可執行檔/指令碼）</span>
+            </label>
+          </div>
+          <div class="scan-buttons">
+            <button id="start-btn" class="btn primary">▶ 開始掃描</button>
+            <button id="stop-btn" class="btn danger" disabled>⏹ 停止掃描</button>
+            <button id="export-csv-btn" class="btn ghost">📤 匯出 CSV</button>
+          </div>
+
+          <div class="progress-wrap">
+            <div class="progress-bar">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <span id="progress-text" class="progress-text">準備就緒</span>
+          </div>
+
+          <div class="scan-stats">
+            <span class="stat">已掃描：<b id="s-scanned">0</b></span>
+            <span class="stat">安全：<b id="s-safe" class="green">0</b></span>
+            <span class="stat">風險：<b id="s-risks" class="red">0</b></span>
+            <span class="stat">錯誤：<b id="s-errors" class="yellow">0</b></span>
+          </div>
+
+          <div id="scan-log" class="log-box"></div>
+        </div>
+      </section>
+
+      <!-- 隔離區 -->
+      <section id="page-quarantine" class="page">
+        <h2>🚧 隔離區</h2>
+        <div class="panel">
+          <p class="muted">已隔離的檔案不會被執行，可選擇還原或永久刪除。</p>
+          <table class="data-table" id="quarantine-table">
+            <thead>
+              <tr><th>檔案</th><th>原始路徑</th><th>隔離時間</th><th>操作</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 歷史記錄 -->
+      <section id="page-history" class="page">
+        <h2>📜 歷史記錄</h2>
+        <div class="panel">
+          <table class="data-table" id="history-table">
+            <thead>
+              <tr><th>時間</th><th>目標</th><th>模式</th><th>總數</th><th>風險</th><th>耗時</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 設定 -->
+      <section id="page-settings" class="page">
+        <h2>⚙️ 設定</h2>
+        <div class="panel">
+          <div class="setting-row">
+            <div>
+              <h3>🛡️ 自動背景檢查</h3>
+              <p class="muted">定期自動對上次掃描的資料夾執行快速掃描（背景執行，不干擾操作）。</p>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="auto-check-toggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="setting-row">
+            <div>
+              <h3>⏱️ 檢查間隔（分鐘）</h3>
+              <p class="muted">建議 30 分鐘以上，避免過度佔用資源。</p>
+            </div>
+            <input type="number" id="auto-interval" class="input num" value="60" min="1">
+          </div>
+          <div class="setting-row">
+            <div>
+              <h3>🚫 排除副檔名</h3>
+              <p class="muted">以逗號分隔，例如：txt, jpg, mp4</p>
+            </div>
+            <input type="text" id="exclude-exts" class="input" placeholder="txt, jpg, mp4">
+          </div>
+          <div class="setting-row">
+            <div>
+              <h3>🎨 介面主題</h3>
+              <p class="muted">深色或淺色模式。</p>
+            </div>
+            <select id="theme-select" class="input">
+              <option value="dark">深色</option>
+              <option value="light">淺色</option>
+            </select>
+          </div>
+          <div class="setting-row">
+            <div>
+              <h3>🔑 API 金鑰</h3>
+              <p class="muted">
+                VirusTotal 與 NVIDIA API Key 透過環境變數設定：<br>
+                <code>VIRUSTOTAL_API_KEY</code>、<code>NVIDIA_API_KEY</code>
+                （NVIDIA 模型：nemotron-3.5-lightning-30b-a3b）
+              </p>
+            </div>
+          </div>
+          <div class="scan-buttons">
+            <button id="save-settings-btn" class="btn primary">💾 儲存設定</button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Toast 通知 -->
+  <div id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

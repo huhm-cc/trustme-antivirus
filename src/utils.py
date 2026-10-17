@@ -81,13 +81,55 @@ def setup_logging(log_file: Optional[str] = None, level: int = logging.INFO) -> 
 
 
 def get_resource_path(relative_path: str) -> str:
-    """取得打包後執行檔內的資源絕對路徑（PyInstaller 一檔案模式專用）。
+    """取得打包後執行檔內的資源絕對路徑（PyInstaller / Nuitka onefile 專用）。
 
-    未打包時回傳專案根目錄下的相對路徑；打包後回傳 sys._MEIPASS 下的路徑。
+    未打包時回傳專案根目錄下的相對路徑；打包後回傳解壓目錄下的路徑。
     """
     try:
         base_path = sys._MEIPASS  # type: ignore[attr-defined]
     except AttributeError:
-        base_path = os.path.abspath(".")
-
+        base_path = os.path.dirname(os.path.abspath(__file__))
     return os.path.join(base_path, relative_path)
+
+
+def get_system_info() -> dict:
+    """收集基本系統資訊（供儀表板顯示）。"""
+    import platform
+
+    info = {
+        "os": f"{platform.system()} {platform.release()}",
+        "os_version": platform.version(),
+        "machine": platform.machine(),
+        "python": platform.python_version(),
+        "cpu_count": os.cpu_count() or 0,
+        "cpu_name": os.environ.get("PROCESSOR_IDENTIFIER", "未知"),
+        "ram_total_gb": 0.0,
+        "ram_usage_percent": 0,
+    }
+
+    # 記憶體資訊（僅 Windows）
+    try:
+        import ctypes
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        stat = MEMORYSTATUSEX()
+        stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
+        info["ram_total_gb"] = round(stat.ullTotalPhys / (1024 ** 3), 2)
+        info["ram_usage_percent"] = stat.dwMemoryLoad
+    except Exception:
+        pass
+
+    return info

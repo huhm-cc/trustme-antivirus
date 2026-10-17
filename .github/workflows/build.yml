@@ -23,9 +23,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Build with PyInstaller
+      - name: Build with Nuitka
         run: |
-          pyinstaller --onefile --noconsole --name TrustmeAntivirus --version-file file_version_info.txt src/main.py
+          python -m nuitka --onefile --windows-disable-console --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

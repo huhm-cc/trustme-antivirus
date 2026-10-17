@@ -217,6 +217,13 @@ class VirusTotalClient:
 class Scanner:
     """遞迴掃描目標資料夾，支援本地黑名單與 VirusTotal 雲端查詢。"""
 
+    # 快速掃描模式：僅檢查常見可執行 / 指令碼副檔名
+    QUICK_SCAN_EXTS = {
+        ".exe", ".dll", ".sys", ".bat", ".cmd", ".ps1", ".vbs", ".js",
+        ".jse", ".wsf", ".wsh", ".msi", ".scr", ".com", ".pif", ".jar",
+        ".hta", ".lnk", ".py", ".pyw",
+    }
+
     def __init__(
         self,
         target_folder: str,
@@ -224,12 +231,16 @@ class Scanner:
         vt_client: Optional[VirusTotalClient] = None,
         on_file_scanned: Optional[Callable[[ScanResult], None]] = None,
         stop_event: Optional[threading.Event] = None,
+        mode: str = "full",
+        exclude_exts: Optional[list[str]] = None,
     ):
         self.target_folder = os.path.abspath(target_folder)
         self.blacklist = blacklist or Blacklist()
         self.vt_client = vt_client
         self.on_file_scanned = on_file_scanned
         self.stop_event = stop_event or threading.Event()
+        self.mode = mode
+        self.exclude_exts = {e.lower() for e in (exclude_exts or [])}
 
         self.report = ScanReport(
             target_folder=self.target_folder,
@@ -241,10 +252,15 @@ class Scanner:
         self.stop_event.set()
 
     def _collect_files(self) -> list[str]:
-        """遞迴蒐集所有檔案路徑。"""
+        """遞迴蒐集所有檔案路徑，依掃描模式與排除清單過濾。"""
         files: list[str] = []
         for root, _dirs, filenames in os.walk(self.target_folder):
             for name in filenames:
+                ext = os.path.splitext(name)[1].lower()
+                if self.mode == "quick" and ext not in self.QUICK_SCAN_EXTS:
+                    continue
+                if ext in self.exclude_exts:
+                    continue
                 files.append(os.path.join(root, name))
         return files
 
@@ -453,3 +469,143 @@ class SmartScanner(Scanner):
                     result.severity = "Helpme"
 
         return result
+
+
+# ---------------------------------------------------------------------------
+# 隔離區（Quarantine）
+# ---------------------------------------------------------------------------
+
+class Quarantine:
+    """將風險檔案移至安全的隔離資料夾，並記錄 manifest 以供還原。"""
+
+    def __init__(self, base_dir: Optional[str] = None):
+        self.base_dir = base_dir or os.path.join(os.getcwd(), "quarantine")
+        os.makedirs(self.base_dir, exist_ok=True)
+        self.manifest_path = os.path.join(self.base_dir, "manifest.json")
+
+    def _load_manifest(self) -> list[dict]:
+        try:
+            with open(self.manifest_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return []
+
+    def _save_manifest(self, items: list[dict]) -> None:
+        with open(self.manifest_path, "w", encoding="utf-8") as f:
+            json.dump(items, f, ensure_ascii=False, indent=2)
+
+    def move_to_quarantine(self, file_path: str, sha256: str = "") -> dict:
+        """將檔案移入隔離區。回傳操作結果。"""
+        import shutil
+
+        try:
+            if not os.path.exists(file_path):
+                return {"ok": False, "error": "檔案不存在"}
+
+            name = os.path.basename(file_path)
+            stamped = f"{int(time.time())}_{name}"
+            dest = os.path.join(self.base_dir, stamped)
+
+            # 避免撞名
+            i = 1
+            while os.path.exists(dest):
+                stamped = f"{int(time.time())}_{i}_{name}"
+                dest = os.path.join(self.base_dir, stamped)
+                i += 1
+
+            shutil.move(file_path, dest)
+
+            items = self._load_manifest()
+            entry = {
+                "quarantined_name": stamped,
+                "original_path": file_path,
+                "sha256": sha256,
+                "quarantined_at": format_timestamp(),
+            }
+            items.append(entry)
+            self._save_manifest(items)
+            return {"ok": True, "entry": entry}
+        except (OSError, PermissionError) as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def restore(self, quarantined_name: str) -> dict:
+        """將隔離檔案還原至原始路徑。"""
+        import shutil
+
+        items = self._load_manifest()
+        entry = next((e for e in items if e["quarantined_name"] == quarantined_name), None)
+        if not entry:
+            return {"ok": False, "error": "找不到隔離記錄"}
+
+        src = os.path.join(self.base_dir, quarantined_name)
+        try:
+            os.makedirs(os.path.dirname(entry["original_path"]), exist_ok=True)
+            shutil.move(src, entry["original_path"])
+            self._save_manifest([e for e in items if e["quarantined_name"] != quarantined_name])
+            return {"ok": True}
+        except (OSError, PermissionError) as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def delete_permanently(self, quarantined_name: str) -> dict:
+        """永久刪除隔離區中的檔案。"""
+        items = self._load_manifest()
+        entry = next((e for e in items if e["quarantined_name"] == quarantined_name), None)
+        if not entry:
+            return {"ok": False, "error": "找不到隔離記錄"}
+
+        src = os.path.join(self.base_dir, quarantined_name)
+        try:
+            if os.path.exists(src):
+                os.remove(src)
+            self._save_manifest([e for e in items if e["quarantined_name"] != quarantined_name])
+            return {"ok": True}
+        except (OSError, PermissionError) as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def list_all(self) -> list[dict]:
+        """列出所有隔離記錄。"""
+        return self._load_manifest()
+
+
+# ---------------------------------------------------------------------------
+# 掃描歷史（History）
+# ---------------------------------------------------------------------------
+
+class HistoryManager:
+    """管理掃描歷史記錄（history.json）。"""
+
+    MAX_ENTRIES = 50
+
+    def __init__(self, base_dir: Optional[str] = None):
+        self.file_path = os.path.join(base_dir or os.getcwd(), "history.json")
+
+    def append(self, report: ScanReport, mode: str = "full") -> dict:
+        """新增一筆掃描歷史。"""
+        items = self.list_all()
+        entry = {
+            "id": int(time.time()),
+            "target_folder": report.target_folder,
+            "mode": mode,
+            "started_at": report.started_at,
+            "finished_at": report.finished_at,
+            "total_files": report.total_files,
+            "scanned_files": report.scanned_files,
+            "risk_files": report.risk_files,
+            "error_files": report.error_files,
+            "duration_seconds": round(report.duration_seconds, 2),
+        }
+        items.insert(0, entry)
+        items = items[: self.MAX_ENTRIES]
+        try:
+            with open(self.file_path, "w", encoding="utf-8") as f:
+                json.dump(items, f, ensure_ascii=False, indent=2)
+        except OSError:
+            pass
+        return entry
+
+    def list_all(self) -> list[dict]:
+        try:
+            with open(self.file_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, json.JSONDecodeError):
+            return []
