@@ -104,13 +104,14 @@ python src/main.py
 
 ```powershell
 pip install -r requirements.txt
-python -m nuitka --onefile --windows-console-mode=hide --mingw64 --enable-plugins=tkinter --windows-icon-from-ico=icon.ico --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
+python -m nuitka --onefile --windows-console-mode=hide --mingw64 --windows-icon-from-ico=icon.ico --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
 ```
 
 產出：`dist/TrustmeAntivirus.exe`
 
 > 首次編譯會自動下載編譯器，需較長時間；之後有快取會快很多。
 > 注意：Python 3.12（含）以下使用 `--mingw64`；Python 3.13 以上請改用 `--zig`。
+> Nuitka 4.x 已內建 tkinter 支援，不需（也不能）加 `--enable-plugins=tkinter`。
 
 ## Windows SmartScreen 說明（重要）
 
