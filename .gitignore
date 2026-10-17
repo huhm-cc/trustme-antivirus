@@ -63,6 +63,9 @@ Thumbs.db
 config.json
 *.local.json
 
+# Official website (deployed to Vercel, not hosted on GitHub)
+website/
+
 # Runtime data (user-generated)
 settings.json
 history.json
