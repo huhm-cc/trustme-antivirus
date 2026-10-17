@@ -62,3 +62,10 @@ Thumbs.db
 # Local config (may contain API keys)
 config.json
 *.local.json
+
+# Runtime data (user-generated)
+settings.json
+history.json
+scan_report.json
+scan_report.csv
+quarantine/
