@@ -11,9 +11,11 @@ from typing import Optional
 
 from .scanner import (
     Scanner,
+    SmartScanner,
     ScanResult,
     Blacklist,
     VirusTotalClient,
+    NVIDIAClient,
 )
 from .utils import (
     compute_sha256,
@@ -74,15 +76,27 @@ class TrustmeAntivirusGUI:
         self.target_folder: str = ""
         self.blacklist: Optional[Blacklist] = None
         self.vt_client: Optional[VirusTotalClient] = None
+        self.nvidia_client: Optional[NVIDIAClient] = None
         self.scanner_thread: Optional[threading.Thread] = None
         self.scanner: Optional[Scanner] = None
         self.stop_event = threading.Event()
+
+        # 動畫狀態
+        self._anim_running = False
+        self._anim_dot_count = 0
 
         self._build_ui()
         self._apply_theme()
 
         # 啟動時載入外部黑名單（若存在）
         self._load_default_blacklist()
+
+        # NVIDIA 智慧檢查狀態
+        nvidia_key = os.environ.get("NVIDIA_API_KEY", "")
+        if nvidia_key:
+            self._log("NVIDIA 智慧檢查已啟用（模型：nemotron-3.5-lightning-30b-a3b）", "info")
+        else:
+            self._log("未設定 NVIDIA_API_KEY，將跳過 AI 智慧檢查。", "info")
 
         setup_logging(level=__import__("logging").WARNING)
 
@@ -320,10 +334,17 @@ class TrustmeAntivirusGUI:
             return
 
         # 初始化 VirusTotal 客戶端（API Key 可透過環境變數設定）
-        api_key = os.environ.get("VIRUSTOTAL_API_KEY", "")
-        self.vt_client = VirusTotalClient(api_key=api_key) if api_key else None
+        vt_api_key = os.environ.get("VIRUSTOTAL_API_KEY", "")
+        self.vt_client = VirusTotalClient(api_key=vt_api_key) if vt_api_key else None
+
+        # 初始化 NVIDIA 智慧檢查客戶端
+        nvidia_api_key = os.environ.get("NVIDIA_API_KEY", "")
+        self.nvidia_client = NVIDIAClient(api_key=nvidia_api_key) if nvidia_api_key else None
 
         self.stop_event.clear()
+        self._anim_running = True
+        self._anim_dot_count = 0
+        self._start_animation()
         self.btn_start.configure(state="disabled")
         self.btn_stop.configure(state="normal")
         self.btn_select.configure(state="disabled")
@@ -338,12 +359,25 @@ class TrustmeAntivirusGUI:
         self.btn_stop.configure(state="disabled")
         self._log("使用者請求停止掃描，將在目前檔案結束後中斷。", "warn")
 
-    def _run_scan(self) -> None:
+    # ------------------------------------------------------------------
+    # 動畫：掃描中顯示脈動提示
+    # ------------------------------------------------------------------
+    def _start_animation(self) -> None:
+        self._animate_progress()
+
+    def _animate_progress(self) -> None:
+        if not self._anim_running:
+            return
+        self._anim_dot_count = (self._anim_dot_count + 1) % 4
+        dots = "." * self._anim_dot_count
+        self.progress_var.set(f"掃描中{dots}")
+        self.root.after(500, self._animate_progress)
         try:
-            self.scanner = Scanner(
+            self.scanner = SmartScanner(
                 target_folder=self.target_folder,
                 blacklist=self.blacklist,
                 vt_client=self.vt_client,
+                nvidia_client=self.nvidia_client,
                 on_file_scanned=self._on_file_scanned,
                 stop_event=self.stop_event,
             )
@@ -352,6 +386,8 @@ class TrustmeAntivirusGUI:
             self.root.after(0, self._scan_finished, report)
         except Exception as exc:  # pylint: disable=broad-except
             self.root.after(0, self._scan_error, str(exc))
+        finally:
+            self._anim_running = False
 
     def _on_file_scanned(self, result: ScanResult) -> None:
         """每個檔案掃描完成後在主執行緒更新介面。"""
@@ -380,12 +416,20 @@ class TrustmeAntivirusGUI:
                 "High": "high",
                 "Helpme": "helpme",
             }.get(sev, "text")
+            ai_info = ""
+            if result.ai_threat_level:
+                ai_info = (
+                    f"  | AI: {result.ai_threat_level} ({result.ai_confidence}%)  | "
+                    f"建議: {result.ai_action}"
+                )
             msg = (
                 f"[風險] {result.path}  | 雜湊: {result.sha256[:16]}...  | "
                 f"本地黑名單: {'是' if result.local_malicious else '否'}  | "
-                f"VT: {result.vt_detected}/{result.vt_total}  | 等級: {sev}"
+                f"VT: {result.vt_detected}/{result.vt_total}  | 等級: {sev}{ai_info}"
             )
             self._log(msg, sev_color)
+            if result.ai_reasoning:
+                self._log(f"    🤖 AI 分析：{result.ai_reasoning}", "info")
             self._show_severity_alert(sev, result.path)
         else:
             self._log(f"[安全] {result.path}", "safe")
@@ -443,6 +487,15 @@ class TrustmeAntivirusGUI:
         self._log(f"掃描數：{report.scanned_files}", "info")
         self._log(f"錯誤數：{report.error_files}", "warn" if report.error_files else "info")
         self._log(f"風險檔案數：{report.risk_files}", "helpme" if report.risk_files else "safe")
+
+        # NVIDIA AI 智慧檢查統計
+        ai_analyzed = sum(1 for r in report.risks if r.ai_threat_level)
+        ai_critical = sum(1 for r in report.risks if r.ai_threat_level == "Critical")
+        if ai_analyzed > 0:
+            self._log(f"NVIDIA AI 智慧分析：{ai_analyzed} 個檔案", "info")
+            if ai_critical > 0:
+                self._log(f"⚠️ AI 判定為極高風險 (Critical)：{ai_critical} 個檔案", "helpme")
+
         self._log(f"耗時：{report.duration_seconds:.1f} 秒", "info")
         self._log("=" * 60, "info")
 

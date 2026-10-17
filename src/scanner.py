@@ -14,6 +14,7 @@ from typing import Callable, Optional
 import requests
 
 from .utils import compute_sha256, classify_severity, format_timestamp
+from . import __version__
 
 
 # ---------------------------------------------------------------------------
@@ -33,6 +34,11 @@ class ScanResult:
     severity: str = "Safe"
     status: str = "scanned"  # scanned / error / skipped
     error_message: str = ""
+    # NVIDIA 智慧檢查欄位
+    ai_threat_level: str = ""
+    ai_confidence: int = 0
+    ai_action: str = ""
+    ai_reasoning: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -320,3 +326,126 @@ class Scanner:
         """將報告寫入 JSON 檔案。"""
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(self.report.to_dict(), f, ensure_ascii=False, indent=2)
+
+
+# ---------------------------------------------------------------------------
+# NVIDIA 智慧檢查（僅限 nemotron-3.5-lightning-30b-a3b）
+# ---------------------------------------------------------------------------
+
+class NVIDIAClient:
+    """NVIDIA NIM API 客戶端，用於智慧威脅分析。
+
+    模型：nvidia/nemotron-3.5-lightning-30b-a3b
+    端點：https://integrate.api.nvidia.com/v1/chat/completions
+    """
+
+    BASE_URL = "https://integrate.api.nvidia.com/v1"
+    MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b"
+
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key
+        self._lock = threading.Lock()
+
+    def analyze_threat(
+        self,
+        file_path: str,
+        sha256: str,
+        vt_detected: int,
+        vt_total: int,
+        local_malicious: bool,
+    ) -> Optional[dict]:
+        """呼叫 NVIDIA 模型對單一檔案進行智慧威脅分析。
+
+        回傳：
+            解析後的 JSON 字典，包含威脅等級、建議動作與說明；失敗則回傳 None。
+        """
+        if not self.api_key:
+            return None
+
+        self._lock.acquire()
+        try:
+            prompt = (
+                "You are a cybersecurity threat analyst. Analyze the following file scan result "
+                "and provide a threat assessment in JSON format only.\n\n"
+                f"File path: {file_path}\n"
+                f"SHA-256: {sha256}\n"
+                f"Local blacklist hit: {local_malicious}\n"
+                f"VirusTotal detections: {vt_detected}/{vt_total}\n\n"
+                "Reply with exactly this JSON structure:\n"
+                '{"threat_level": "Safe|Low|Medium|High|Critical", '
+                '"confidence": 0-100, '
+                '"recommended_action": "ignore|quarantine|delete|scan_full_system", '
+                '"reasoning": "brief explanation in Traditional Chinese"}\n'
+                "Do not include any text outside the JSON."
+            )
+
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+            payload = {
+                "model": self.MODEL,
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.2,
+                "max_tokens": 512,
+            }
+
+            try:
+                resp = requests.post(
+                    f"{self.BASE_URL}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=30,
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    content = data["choices"][0]["message"]["content"]
+                    # 嘗試解析 JSON（模型有時會加上 ```json 標記）
+                    content = content.strip()
+                    if content.startswith("```"):
+                        content = content.split("```")[1]
+                        if content.startswith("json"):
+                            content = content[4:]
+                    return json.loads(content)
+                return None
+            except Exception:
+                return None
+        finally:
+            self._lock.release()
+
+
+class SmartScanner(Scanner):
+    """擴展掃描器，加入 NVIDIA 智慧威脅檢查。"""
+
+    def __init__(self, *args, nvidia_client: Optional[NVIDIAClient] = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.nvidia_client = nvidia_client
+
+    def _scan_single(self, file_path: str) -> ScanResult:
+        result = super()._scan_single(file_path)
+
+        # 僅對風險檔案或本地黑名單命中檔案進行 NVIDIA 智慧分析
+        if (
+            self.nvidia_client
+            and self.nvidia_client.api_key
+            and (result.status == "threat" or result.local_malicious)
+        ):
+            ai_result = self.nvidia_client.analyze_threat(
+                file_path=result.path,
+                sha256=result.sha256,
+                vt_detected=result.vt_detected,
+                vt_total=result.vt_total,
+                local_malicious=result.local_malicious,
+            )
+            if ai_result:
+                result.ai_threat_level = ai_result.get("threat_level", "Unknown")
+                result.ai_confidence = ai_result.get("confidence", 0)
+                result.ai_action = ai_result.get("recommended_action", "ignore")
+                result.ai_reasoning = ai_result.get("reasoning", "")
+
+                # 如果 AI 判定為 Critical，升級為 Helpme
+                if result.ai_threat_level == "Critical":
+                    result.severity = "Helpme"
+
+        return result

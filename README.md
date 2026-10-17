@@ -102,10 +102,10 @@ python src/main.py
 
 ```powershell
 pip install pyinstaller
-pyinstaller --onefile --noconsole --name TrustmeAntivirus src/main.py
+pyinstaller --onefile --noconsole --name TrustmeAntivirus --version-file file_version_info.txt src/main.py
 ```
 
-產出檔案位於 `dist/TrustmeAntivirus.exe`。
+產出檔案位於 `dist/TrustmeAntivirus.exe`，內嵌產品名稱 `TrustmeAntivirus` 與版本 `1.0.0.0`。
 
 若有圖示或設定檔，請修改 `TrustmeAntivirus.spec` 的 `datas` 參數，並在程式中以 `sys._MEIPASS` 存取資源。
 
