@@ -124,7 +124,8 @@ python -m nuitka --onefile --windows-disable-console --enable-plugin=tkinter --w
 
 ## 授權
 
-本專案採用 [AGPL License](LICENSE)
+本專案採用 [GNU AGPL 3.0](LICENSE)，Copyright (c) 2026 TrustmeAntivirus Team。
+任何人散布本軟體或其修改版時，必須以相同授權條款提供完整原始碼；透過網路提供服務亦同。
 
 ## 資安回報
 

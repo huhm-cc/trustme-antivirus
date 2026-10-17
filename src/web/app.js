@@ -12,7 +12,6 @@ async function init() {
   bindNavigation();
   bindScanControls();
   bindSettings();
-  bindTheme();
 
   await loadSettings();
   await loadDashboard();
@@ -254,12 +253,10 @@ function bindSettings() {
     const enabled = document.getElementById("auto-check-toggle").checked;
     const interval = parseInt(document.getElementById("auto-interval").value, 10) || 60;
     const exts = document.getElementById("exclude-exts").value;
-    const theme = document.getElementById("theme-select").value;
 
-    const result = await api.save_settings(enabled, interval, exts, theme);
+    const result = await api.save_settings(enabled, interval, exts);
     if (result.ok) {
       showToast("設定已儲存 ✅", "safe");
-      applyTheme(theme);
       updateProtectionStatus();
     } else {
       showToast(result.error || "儲存失敗", "risk");
@@ -323,9 +320,7 @@ async function loadSettings() {
   document.getElementById("auto-check-toggle").checked = !!s.auto_check_enabled;
   document.getElementById("auto-interval").value = s.auto_check_interval_min || 60;
   document.getElementById("exclude-exts").value = (s.exclude_exts || []).join(", ");
-  document.getElementById("theme-select").value = s.theme || "dark";
   if (s.last_folder) document.getElementById("folder-input").value = s.last_folder;
-  applyTheme(s.theme || "dark");
   updateProtectionStatus();
   await loadApiKeyStatus();
 }
@@ -335,21 +330,6 @@ function updateProtectionStatus() {
   const el = document.getElementById("p-auto");
   el.textContent = enabled ? "啟用" : "停用";
   el.className = enabled ? "on" : "off";
-}
-
-/* ---------- 主題 ---------- */
-function bindTheme() {
-  document.getElementById("theme-btn").addEventListener("click", () => {
-    const current = document.body.dataset.theme;
-    const next = current === "dark" ? "light" : "dark";
-    applyTheme(next);
-    document.getElementById("theme-select").value = next;
-  });
-}
-
-function applyTheme(theme) {
-  document.body.dataset.theme = theme;
-  document.getElementById("theme-btn").textContent = theme === "dark" ? "🌙" : "☀️";
 }
 
 /* ---------- Toast ---------- */

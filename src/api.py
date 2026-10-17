@@ -75,7 +75,6 @@ class BridgeAPI:
             "auto_check_enabled": False,
             "auto_check_interval_min": 60,
             "exclude_exts": [],
-            "theme": "dark",
             "last_folder": "",
             "vt_api_key": "",
             "nvidia_api_key": "",
@@ -412,13 +411,12 @@ class BridgeAPI:
         return self.settings
 
     def save_settings(self, auto_check_enabled: bool, auto_check_interval_min: int,
-                      exclude_exts: str, theme: str) -> dict:
+                      exclude_exts: str) -> dict:
         try:
             self.settings["auto_check_enabled"] = bool(auto_check_enabled)
             self.settings["auto_check_interval_min"] = max(1, int(auto_check_interval_min))
             exts = [e.strip().lstrip(".").lower() for e in exclude_exts.split(",") if e.strip()]
             self.settings["exclude_exts"] = exts
-            self.settings["theme"] = theme
             self._save_settings()
             self._log("設定已儲存。", "info")
             return {"ok": True}

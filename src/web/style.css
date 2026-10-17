@@ -1,48 +1,32 @@
-/* TrustmeAntivirus 現代介面樣式 */
+/* TrustmeAntivirus 應用程式樣式 —— 與官網一致的簡約淺色防護色系 */
 
-:root, [data-theme="dark"] {
-  --bg: #0b1220;
-  --bg-soft: #101a2c;
-  --surface: #14203a;
-  --surface-hover: #1b2a4a;
-  --border: #24365c;
-  --text: #e8eefb;
-  --text-muted: #8ba3c7;
-  --accent: #22d3ee;
-  --accent-2: #0ea5e9;
-  --accent-glow: rgba(34, 211, 238, .30);
-  --danger: #ef4444;
-  --success: #34d399;
-  --warn: #fbbf24;
-  --shadow: 0 8px 24px rgba(0, 0, 0, .45);
-}
-
-[data-theme="light"] {
-  --bg: #eef4fb;
-  --bg-soft: #ffffff;
+:root {
+  --bg: #f7f9fb;
   --surface: #ffffff;
-  --surface-hover: #dde9f7;
-  --border: #cfdcee;
+  --surface-soft: #eef4fb;
+  --border: #dde6f0;
   --text: #0d1b2e;
-  --text-muted: #5b7395;
+  --muted: #5b7395;
   --accent: #0891b2;
-  --accent-2: #0284c7;
-  --accent-glow: rgba(8, 145, 178, .25);
+  --accent-deep: #0e7490;
+  --accent-soft: #e0f5f9;
+  --accent-glow: rgba(8, 145, 178, .22);
   --danger: #dc2626;
+  --danger-deep: #b91c1c;
   --success: #059669;
   --warn: #ca8a04;
-  --shadow: 0 8px 24px rgba(13, 27, 46, .12);
+  --shadow: 0 8px 24px rgba(13, 27, 46, .10);
+  --mono: Consolas, "Cascadia Mono", monospace;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
+  font-family: -apple-system, "Segoe UI", "Microsoft JhengHei", system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   height: 100vh;
   overflow: hidden;
-  transition: background .3s, color .3s;
 }
 
 /* ---------- 頂部欄 ---------- */
@@ -51,32 +35,25 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 14px 24px;
-  background: linear-gradient(135deg, var(--bg-soft), var(--surface));
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
 
-.brand { display: flex; align-items: center; gap: 14px; }
+.brand { display: flex; align-items: center; gap: 12px; }
 
 .logo {
-  font-size: 34px;
-  filter: drop-shadow(0 0 10px var(--accent-glow));
-  animation: logo-pulse 3s ease-in-out infinite;
-}
-
-@keyframes logo-pulse {
-  0%, 100% { filter: drop-shadow(0 0 6px var(--accent-glow)); }
-  50%      { filter: drop-shadow(0 0 16px var(--accent-glow)); }
+  font-size: 30px;
+  filter: drop-shadow(0 2px 6px var(--accent-glow));
 }
 
 .brand h1 {
-  font-size: 20px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-size: 19px;
+  color: var(--text);
+  letter-spacing: .2px;
 }
+.brand h1 b { color: var(--accent-deep); }
 
-.slogan { font-size: 12px; color: var(--text-muted); }
+.slogan { font-size: 12px; color: var(--muted); margin-top: 1px; }
 
 .topbar-right { display: flex; align-items: center; gap: 12px; }
 
@@ -88,9 +65,9 @@ body {
   border: 1px solid var(--border);
   background: var(--surface);
 }
-.badge.idle    { color: var(--success); }
+.badge.idle     { color: var(--success); }
 .badge.scanning { color: var(--warn); animation: pulse 1.2s infinite; }
-.badge.risk    { color: var(--danger); }
+.badge.risk     { color: var(--danger); }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
@@ -98,15 +75,15 @@ body {
 }
 
 /* ---------- 版面 ---------- */
-.layout { display: flex; height: calc(100vh - 69px); }
+.layout { display: flex; height: calc(100vh - 70px); }
 
 .sidebar {
-  width: 220px;
-  padding: 18px 12px;
+  width: 216px;
+  padding: 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  background: var(--bg-soft);
+  gap: 4px;
+  background: var(--surface);
   border-right: 1px solid var(--border);
 }
 
@@ -115,22 +92,21 @@ body {
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 12px 14px;
+  padding: 11px 14px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--muted);
   font-size: 14px;
   cursor: pointer;
-  transition: all .2s;
+  transition: all .15s;
   text-align: left;
 }
 
-.nav-item:hover { background: var(--surface-hover); color: var(--text); transform: translateX(3px); }
+.nav-item:hover { background: var(--surface-soft); color: var(--text); }
 .nav-item.active {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--accent-deep);
   color: #fff;
-  box-shadow: 0 4px 14px var(--accent-glow);
 }
 
 .pill {
@@ -145,52 +121,50 @@ body {
 }
 .pill:empty, .pill.zero { display: none; }
 
-.sidebar-footer { margin-top: auto; padding: 10px 14px; color: var(--text-muted); font-size: 12px; }
+.sidebar-footer { margin-top: auto; padding: 10px 14px; color: var(--muted); font-size: 12px; }
 
-.content { flex: 1; overflow-y: auto; padding: 26px 30px; }
+.content { flex: 1; overflow-y: auto; padding: 26px 30px; background: var(--bg); }
 
-.page { display: none; animation: fade-in .35s ease; }
+.page { display: none; animation: fade-in .25s ease; }
 .page.active { display: block; }
 
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-h2 { font-size: 20px; margin-bottom: 20px; }
+h2 { font-size: 20px; margin-bottom: 18px; letter-spacing: -.3px; }
 h3 { font-size: 15px; margin-bottom: 10px; }
 
 /* ---------- 卡片 ---------- */
-.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 22px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 20px; }
 
 .card {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 20px;
-  border-radius: 16px;
+  padding: 18px 20px;
+  border-radius: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  transition: transform .25s, box-shadow .25s;
+  transition: box-shadow .2s;
 }
-.card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px var(--accent-glow); }
+.card:hover { box-shadow: var(--shadow); }
 
-.card-icon { font-size: 30px; }
-.card-value { font-size: 26px; font-weight: 700; }
-.card-label { font-size: 12px; color: var(--text-muted); }
+.card-icon { font-size: 28px; }
+.card-value { font-size: 25px; font-weight: 700; }
+.card-label { font-size: 12px; color: var(--muted); }
 
 /* ---------- 面板 ---------- */
-.panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 900px) { .panel-grid { grid-template-columns: 1fr; } }
 
 .panel {
   padding: 20px;
-  border-radius: 16px;
+  border-radius: 12px;
   background: var(--surface);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow);
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .info-table, .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -199,12 +173,11 @@ h3 { font-size: 15px; margin-bottom: 10px; }
   border-bottom: 1px solid var(--border);
   text-align: left;
 }
-.info-table td:first-child { color: var(--text-muted); width: 45%; }
+.info-table td:first-child { color: var(--muted); width: 45%; }
 .info-table td:last-child { font-weight: 600; }
 
-.data-table thead th { color: var(--text-muted); font-weight: 600; }
-.data-table tbody tr { transition: background .15s; }
-.data-table tbody tr:hover { background: var(--surface-hover); }
+.data-table thead th { color: var(--muted); font-weight: 600; }
+.data-table tbody tr:hover { background: var(--surface-soft); }
 
 /* ---------- 防護狀態 ---------- */
 .protection-status { display: flex; flex-direction: column; gap: 4px; }
@@ -219,7 +192,7 @@ h3 { font-size: 15px; margin-bottom: 10px; }
 .protect-item:last-child { border-bottom: none; }
 
 .protect-item .on  { color: var(--success); font-weight: 700; }
-.protect-item .off { color: var(--text-muted); font-weight: 700; }
+.protect-item .off { color: var(--muted); font-weight: 700; }
 
 /* ---------- 掃描控制 ---------- */
 .scan-controls { display: flex; gap: 10px; margin-bottom: 14px; }
@@ -227,13 +200,13 @@ h3 { font-size: 15px; margin-bottom: 10px; }
 .input {
   flex: 1;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: 8px;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--surface);
   color: var(--text);
   font-size: 14px;
   outline: none;
-  transition: border .2s, box-shadow .2s;
+  transition: border .15s, box-shadow .15s;
 }
 .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
 .input.num { width: 110px; flex: none; text-align: center; }
@@ -242,35 +215,36 @@ select.input { flex: none; width: 130px; }
 
 .scan-options { display: flex; gap: 24px; margin-bottom: 16px; font-size: 14px; }
 .radio { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-.radio input { accent-color: var(--accent); }
+.radio input { accent-color: var(--accent-deep); }
 
 .scan-buttons { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
 
 .btn {
   padding: 12px 22px;
-  border: none;
-  border-radius: 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   color: var(--text);
-  background: var(--surface-hover);
+  background: var(--surface-soft);
   transition: transform .15s, box-shadow .2s, background .2s;
 }
-.btn:hover:not(:disabled) { transform: translateY(-2px); }
+.btn:hover:not(:disabled) { transform: translateY(-1px); }
 .btn:active:not(:disabled) { transform: translateY(0); }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 
 .btn.primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  background: var(--accent-deep);
   color: #fff;
-  box-shadow: 0 6px 18px var(--accent-glow);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
 }
-.btn.primary:hover:not(:disabled) { box-shadow: 0 8px 26px var(--accent-glow); }
+.btn.primary:hover:not(:disabled) { background: var(--accent); box-shadow: 0 6px 16px var(--accent-glow); }
 
-.btn.danger { background: linear-gradient(135deg, var(--danger), #b91c1c); color: #fff; }
-.btn.ghost { background: transparent; border: 1px solid var(--border); }
-.btn.small { padding: 8px 12px; font-size: 14px; }
+.btn.danger { background: var(--danger-deep); color: #fff; }
+.btn.ghost { background: var(--surface); border-color: var(--border); }
+.btn.ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-deep); }
+.btn.small { padding: 8px 12px; font-size: 13px; }
 
 /* ---------- 進度條 ---------- */
 .progress-wrap { margin-bottom: 14px; }
@@ -278,7 +252,7 @@ select.input { flex: none; width: 130px; }
 .progress-bar {
   height: 14px;
   border-radius: 999px;
-  background: var(--bg);
+  background: var(--surface-soft);
   border: 1px solid var(--border);
   overflow: hidden;
 }
@@ -287,20 +261,13 @@ select.input { flex: none; width: 130px; }
   height: 100%;
   width: 0%;
   border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent));
-  background-size: 200% 100%;
-  animation: shimmer 2s linear infinite;
+  background: linear-gradient(90deg, #22d3ee, #0ea5e9);
   transition: width .3s ease;
 }
 
-@keyframes shimmer {
-  0%   { background-position: 0% 0; }
-  100% { background-position: 200% 0; }
-}
+.progress-text { font-size: 12px; color: var(--muted); display: block; margin-top: 6px; }
 
-.progress-text { font-size: 12px; color: var(--text-muted); display: block; margin-top: 6px; }
-
-.scan-stats { display: flex; gap: 18px; font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+.scan-stats { display: flex; gap: 18px; font-size: 13px; color: var(--muted); margin-bottom: 14px; }
 .scan-stats b { font-size: 16px; }
 .green  { color: var(--success); }
 .red    { color: var(--danger); }
@@ -311,10 +278,10 @@ select.input { flex: none; width: 130px; }
   height: 300px;
   overflow-y: auto;
   padding: 14px;
-  border-radius: 12px;
-  background: var(--bg);
+  border-radius: 10px;
+  background: var(--surface-soft);
   border: 1px solid var(--border);
-  font-family: Consolas, "Cascadia Mono", monospace;
+  font-family: var(--mono);
   font-size: 12.5px;
   line-height: 1.7;
   white-space: pre-wrap;
@@ -325,8 +292,8 @@ select.input { flex: none; width: 130px; }
 .log-line.warn   { color: var(--warn); }
 .log-line.error  { color: var(--danger); }
 .log-line.high   { color: var(--danger); }
-.log-line.helpme { color: #f87171; font-weight: 700; }
-.log-line.info   { color: var(--text-muted); }
+.log-line.helpme { color: var(--danger); font-weight: 700; }
+.log-line.info   { color: var(--muted); }
 
 /* ---------- 設定 ---------- */
 .setting-row {
@@ -338,13 +305,13 @@ select.input { flex: none; width: 130px; }
   border-bottom: 1px dashed var(--border);
 }
 .setting-row:last-of-type { border-bottom: none; }
-.muted { color: var(--text-muted); font-size: 13px; margin-top: 4px; }
+.muted { color: var(--muted); font-size: 13px; margin-top: 4px; }
 code {
-  background: var(--bg);
+  background: var(--accent-soft);
   padding: 2px 6px;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 12px;
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 
 /* 開關 */
@@ -356,7 +323,7 @@ code {
   border-radius: 999px;
   background: var(--border);
   cursor: pointer;
-  transition: background .25s;
+  transition: background .2s;
 }
 .slider::before {
   content: "";
@@ -365,9 +332,9 @@ code {
   left: 3px; top: 3px;
   border-radius: 50%;
   background: #fff;
-  transition: transform .25s;
+  transition: transform .2s;
 }
-.switch input:checked + .slider { background: var(--accent); }
+.switch input:checked + .slider { background: var(--accent-deep); }
 .switch input:checked + .slider::before { transform: translateX(24px); }
 
 /* ---------- Toast ---------- */
@@ -385,13 +352,13 @@ code {
   min-width: 260px;
   max-width: 380px;
   padding: 14px 18px;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
+  border-left: 4px solid var(--accent-deep);
   box-shadow: var(--shadow);
   font-size: 13px;
-  animation: toast-in .35s ease;
+  animation: toast-in .3s ease;
 }
 .toast.safe  { border-left-color: var(--success); }
 .toast.risk  { border-left-color: var(--danger); }
@@ -417,7 +384,7 @@ code {
 
 .key-input {
   width: 320px;
-  font-family: Consolas, "Cascadia Mono", monospace;
+  font-family: var(--mono);
   font-size: 13px;
   letter-spacing: .5px;
 }
