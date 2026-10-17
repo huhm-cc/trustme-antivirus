@@ -111,7 +111,7 @@ pyinstaller --onefile --noconsole --name TrustmeAntivirus --version-file file_ve
 
 ## 授權
 
-本專案採用 [MIT License](LICENSE)，Copyright (c) 2026 TrustmeAntivirus Team。
+本專案採用 [GNU License](LICENSE)
 
 ## 資安回報
 
