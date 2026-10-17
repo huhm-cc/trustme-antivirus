@@ -215,13 +215,43 @@
           </div>
           <div class="setting-row">
             <div>
-              <h3>🔑 API 金鑰</h3>
+              <h3>☁️ VirusTotal API Key</h3>
+              <p class="muted" id="vt-key-status">未設定</p>
+            </div>
+            <div class="key-input-group">
+              <input type="password" id="vt-key-input" class="input key-input" placeholder="貼上 VirusTotal API Key" autocomplete="off">
+              <button class="btn small ghost" id="vt-key-toggle" title="顯示/隱藏">👁</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <h3>🤖 NVIDIA API Key</h3>
+              <p class="muted" id="nv-key-status">未設定（模型：nemotron-3.5-lightning-30b-a3b）</p>
+            </div>
+            <div class="key-input-group">
+              <input type="password" id="nv-key-input" class="input key-input" placeholder="貼上 NVIDIA API Key" autocomplete="off">
+              <button class="btn small ghost" id="nv-key-toggle" title="顯示/隱藏">👁</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div>
+              <h3>💾 金鑰儲存</h3>
               <p class="muted">
-                VirusTotal 與 NVIDIA API Key 透過環境變數設定：<br>
-                <code>VIRUSTOTAL_API_KEY</code>、<code>NVIDIA_API_KEY</code>
-                （NVIDIA 模型：nemotron-3.5-lightning-30b-a3b）
+                金鑰會儲存在本機設定檔（settings.json），掃描時設定檔優先於環境變數。<br>
+                留空儲存即清除設定檔中的金鑰。
               </p>
             </div>
+            <button id="save-keys-btn" class="btn primary">💾 儲存金鑰</button>
+          </div>
+          <div class="setting-row">
+            <div>
+              <h3>🖥️ 系統環境變數</h3>
+              <p class="muted">
+                也可以將金鑰寫入系統環境變數（<code>VIRUSTOTAL_API_KEY</code>、
+                <code>NVIDIA_API_KEY</code>），之後重新啟動本程式即可生效。
+              </p>
+            </div>
+            <button id="open-env-btn" class="btn">🖥️ 開啟環境變數設定</button>
           </div>
           <div class="scan-buttons">
             <button id="save-settings-btn" class="btn primary">💾 儲存設定</button>

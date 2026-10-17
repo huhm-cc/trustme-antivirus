@@ -54,11 +54,14 @@ class BridgeAPI:
         self.settings = self._load_settings()
 
         self._log(f"TrustmeAntivirus v{__version__} 已啟動。", "info")
-        nvidia_key = os.environ.get("NVIDIA_API_KEY", "")
-        if nvidia_key:
+        if self._get_nv_key():
             self._log("NVIDIA 智慧檢查已啟用（nemotron-3.5-lightning-30b-a3b）", "info")
         else:
-            self._log("未設定 NVIDIA_API_KEY，將跳過 AI 智慧檢查。", "info")
+            self._log("未設定 NVIDIA API Key，可在「設定」頁填入以啟用 AI 智慧檢查。", "info")
+        if self._get_vt_key():
+            self._log("VirusTotal 雲端查詢已啟用。", "info")
+        else:
+            self._log("未設定 VirusTotal API Key，可在「設定」頁填入以啟用雲端查詢。", "info")
 
         # 自動背景檢查執行緒
         self._auto_thread = threading.Thread(target=self._auto_check_loop, daemon=True)
@@ -74,6 +77,8 @@ class BridgeAPI:
             "exclude_exts": [],
             "theme": "dark",
             "last_folder": "",
+            "vt_api_key": "",
+            "nvidia_api_key": "",
         }
         try:
             with open(self.settings_path, "r", encoding="utf-8") as f:
@@ -113,6 +118,69 @@ class BridgeAPI:
                 "text": text,
                 "kind": kind,
             })
+
+    def _get_vt_key(self) -> str:
+        """取得實際生效的 VirusTotal Key（設定檔優先，環境變數備援）。"""
+        return (self.settings.get("vt_api_key", "")
+                or os.environ.get("VIRUSTOTAL_API_KEY", "")).strip()
+
+    def _get_nv_key(self) -> str:
+        """取得實際生效的 NVIDIA Key（設定檔優先，環境變數備援）。"""
+        return (self.settings.get("nvidia_api_key", "")
+                or os.environ.get("NVIDIA_API_KEY", "")).strip()
+
+    @staticmethod
+    def _mask_key(key: str) -> str:
+        if not key:
+            return ""
+        if len(key) <= 12:
+            return "*" * len(key)
+        return f"{key[:6]}…{key[-4:]}（已設定）"
+
+    # ------------------------------------------------------------------
+    # JS API：API 金鑰管理
+    # ------------------------------------------------------------------
+    def get_api_keys(self) -> dict:
+        """回傳金鑰設定狀態（不回傳完整金鑰）。"""
+        vt = self._get_vt_key()
+        nv = self._get_nv_key()
+        return {
+            "vt_set": bool(vt),
+            "vt_masked": self._mask_key(vt),
+            "vt_from_env": not self.settings.get("vt_api_key") and bool(vt),
+            "nvidia_set": bool(nv),
+            "nvidia_masked": self._mask_key(nv),
+            "nvidia_from_env": not self.settings.get("nvidia_api_key") and bool(nv),
+        }
+
+    def set_api_keys(self, vt_key: str, nvidia_key: str) -> dict:
+        """儲存 API 金鑰到設定檔（留空即清除設定檔中的金鑰）。"""
+        try:
+            self.settings["vt_api_key"] = (vt_key or "").strip()
+            self.settings["nvidia_api_key"] = (nvidia_key or "").strip()
+            self._save_settings()
+
+            vt = self._get_vt_key()
+            nv = self._get_nv_key()
+            self._log(
+                f"金鑰狀態更新 — VirusTotal: {'已啟用' if vt else '未設定'}，"
+                f"NVIDIA: {'已啟用' if nv else '未設定'}",
+                "info",
+            )
+            return {"ok": True}
+        except Exception as exc:  # pylint: disable=broad-except
+            return {"ok": False, "error": str(exc)}
+
+    def open_env_window(self) -> dict:
+        """開啟 Windows 系統環境變數編輯視窗。"""
+        try:
+            import subprocess
+            subprocess.Popen(
+                ["rundll32", "sysdm.cpl,EditEnvironmentVariables"]
+            )
+            return {"ok": True}
+        except Exception as exc:  # pylint: disable=broad-except
+            return {"ok": False, "error": str(exc)}
 
     # ------------------------------------------------------------------
     # JS API：資料夾選擇
@@ -156,12 +224,9 @@ class BridgeAPI:
         self._stop_event.clear()
         self.is_scanning = True
 
-        vt_key = os.environ.get("VIRUSTOTAL_API_KEY", "")
-        nv_key = os.environ.get("NVIDIA_API_KEY", "")
-
         self._scan_thread = threading.Thread(
             target=self._run_scan,
-            args=(folder, mode, vt_key, nv_key),
+            args=(folder, mode),
             daemon=True,
         )
         self._scan_thread.start()
@@ -174,13 +239,13 @@ class BridgeAPI:
         self._log("使用者請求停止掃描，將在目前檔案結束後中斷。", "warn")
         return {"ok": True}
 
-    def _run_scan(self, folder: str, mode: str, vt_key: str, nv_key: str) -> None:
+    def _run_scan(self, folder: str, mode: str) -> None:
         try:
             self.scanner = SmartScanner(
                 target_folder=folder,
                 blacklist=self.blacklist,
-                vt_client=VirusTotalClient(api_key=vt_key) if vt_key else None,
-                nvidia_client=NVIDIAClient(api_key=nv_key) if nv_key else None,
+                vt_client=VirusTotalClient(api_key=self._get_vt_key()) if self._get_vt_key() else None,
+                nvidia_client=NVIDIAClient(api_key=self._get_nv_key()) if self._get_nv_key() else None,
                 on_file_scanned=self._on_file_scanned,
                 stop_event=self._stop_event,
                 mode=mode,
@@ -272,6 +337,8 @@ class BridgeAPI:
             "last_scan_finished_at": self.last_scan_finished_at,
             "target_folder": self._last_target_folder,
             "mode": self._last_scan_mode,
+            "vt_enabled": bool(self._get_vt_key()),
+            "nvidia_enabled": bool(self._get_nv_key()),
             "notifications": notifications,
             "timestamp": format_timestamp(),
         }

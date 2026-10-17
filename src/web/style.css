@@ -1,37 +1,37 @@
 /* TrustmeAntivirus 現代介面樣式 */
 
 :root, [data-theme="dark"] {
-  --bg: #0f172a;
-  --bg-soft: #1e293b;
-  --surface: #172033;
-  --surface-hover: #1f2b42;
-  --border: #2c3a55;
-  --text: #f1f5f9;
-  --text-muted: #94a3b8;
-  --accent: #3b82f6;
-  --accent-2: #6366f1;
-  --accent-glow: rgba(59, 130, 246, .35);
+  --bg: #0b1220;
+  --bg-soft: #101a2c;
+  --surface: #14203a;
+  --surface-hover: #1b2a4a;
+  --border: #24365c;
+  --text: #e8eefb;
+  --text-muted: #8ba3c7;
+  --accent: #22d3ee;
+  --accent-2: #0ea5e9;
+  --accent-glow: rgba(34, 211, 238, .30);
   --danger: #ef4444;
-  --success: #22c55e;
-  --warn: #eab308;
+  --success: #34d399;
+  --warn: #fbbf24;
   --shadow: 0 8px 24px rgba(0, 0, 0, .45);
 }
 
 [data-theme="light"] {
-  --bg: #f1f5f9;
+  --bg: #eef4fb;
   --bg-soft: #ffffff;
   --surface: #ffffff;
-  --surface-hover: #e2e8f0;
-  --border: #dbe3ee;
-  --text: #0f172a;
-  --text-muted: #64748b;
-  --accent: #2563eb;
-  --accent-2: #4f46e5;
-  --accent-glow: rgba(37, 99, 235, .25);
+  --surface-hover: #dde9f7;
+  --border: #cfdcee;
+  --text: #0d1b2e;
+  --text-muted: #5b7395;
+  --accent: #0891b2;
+  --accent-2: #0284c7;
+  --accent-glow: rgba(8, 145, 178, .25);
   --danger: #dc2626;
-  --success: #16a34a;
+  --success: #059669;
   --warn: #ca8a04;
-  --shadow: 0 8px 24px rgba(15, 23, 42, .12);
+  --shadow: 0 8px 24px rgba(13, 27, 46, .12);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -411,3 +411,15 @@ code {
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ---------- API 金鑰輸入 ---------- */
+.key-input-group { display: flex; gap: 8px; flex: none; align-items: center; }
+
+.key-input {
+  width: 320px;
+  font-family: Consolas, "Cascadia Mono", monospace;
+  font-size: 13px;
+  letter-spacing: .5px;
+}
+
+#vt-key-status, #nv-key-status { min-height: 18px; }

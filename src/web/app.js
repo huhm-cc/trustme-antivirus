@@ -176,6 +176,21 @@ async function loadDashboard() {
   document.getElementById("ver-label").textContent = `v${status.version}`;
   document.getElementById("p-blacklist").className = "on";
   document.getElementById("p-blacklist").textContent = "啟用";
+
+  // VirusTotal / NVIDIA 啟用狀態
+  const vtEl = document.getElementById("p-vt");
+  vtEl.textContent = status.vt_enabled ? "啟用" : "未設定";
+  vtEl.className = status.vt_enabled ? "on" : "off";
+
+  const nvEl = document.getElementById("p-nvidia");
+  nvEl.textContent = status.nvidia_enabled ? "啟用" : "未設定";
+  nvEl.className = status.nvidia_enabled ? "on" : "off";
+
+  // 自動背景檢查狀態
+  const autoEl = document.getElementById("p-auto");
+  const s = await api.get_settings();
+  autoEl.textContent = s.auto_check_enabled ? `啟用（每 ${s.auto_check_interval_min} 分鐘）` : "停用";
+  autoEl.className = s.auto_check_enabled ? "on" : "off";
 }
 
 /* ---------- 隔離區 ---------- */
@@ -250,6 +265,56 @@ function bindSettings() {
       showToast(result.error || "儲存失敗", "risk");
     }
   });
+
+  bindApiKeyControls();
+}
+
+function bindApiKeyControls() {
+  // 顯示 / 隱藏切換
+  for (const [inputId, toggleId] of [["vt-key-input", "vt-key-toggle"],
+                                     ["nv-key-input", "nv-key-toggle"]]) {
+    document.getElementById(toggleId).addEventListener("click", () => {
+      const el = document.getElementById(inputId);
+      el.type = el.type === "password" ? "text" : "password";
+    });
+  }
+
+  // 儲存金鑰
+  document.getElementById("save-keys-btn").addEventListener("click", async () => {
+    const vt = document.getElementById("vt-key-input").value;
+    const nv = document.getElementById("nv-key-input").value;
+    const result = await api.set_api_keys(vt, nv);
+    if (result.ok) {
+      showToast("API 金鑰已儲存 ✅", "safe");
+      await loadApiKeyStatus();
+      await loadDashboard();
+    } else {
+      showToast(result.error || "儲存失敗", "risk");
+    }
+  });
+
+  // 開啟 Windows 環境變數設定視窗
+  document.getElementById("open-env-btn").addEventListener("click", async () => {
+    const result = await api.open_env_window();
+    if (result.ok) {
+      showToast("已開啟系統環境變數設定視窗", "info");
+    } else {
+      showToast(result.error || "開啟失敗", "risk");
+    }
+  });
+}
+
+async function loadApiKeyStatus() {
+  const keys = await api.get_api_keys();
+  const vtStatus = document.getElementById("vt-key-status");
+  const nvStatus = document.getElementById("nv-key-status");
+
+  vtStatus.textContent = keys.vt_set
+    ? keys.vt_masked + (keys.vt_from_env ? "（來自環境變數）" : "")
+    : "未設定";
+  nvStatus.textContent = keys.nvidia_set
+    ? keys.nvidia_masked + (keys.nvidia_from_env ? "（來自環境變數）" : "")
+    : "未設定（模型：nemotron-3.5-lightning-30b-a3b）";
 }
 
 async function loadSettings() {
@@ -262,6 +327,7 @@ async function loadSettings() {
   if (s.last_folder) document.getElementById("folder-input").value = s.last_folder;
   applyTheme(s.theme || "dark");
   updateProtectionStatus();
+  await loadApiKeyStatus();
 }
 
 function updateProtectionStatus() {

@@ -86,16 +86,19 @@ python src/main.py
 
 ## API 金鑰設定（選用）
 
+**方式一（推薦）：在程式內設定**
+
+開啟程式 → ⚙️ 設定 → 直接貼上 API Key → 「💾 儲存金鑰」。
+金鑰儲存在本機 `settings.json`，掃描時設定檔優先於環境變數。
+
+**方式二：系統環境變數**
+
+設定頁也提供「🖥️ 開啟環境變數設定」按鈕，可直接開啟 Windows 環境變數編輯視窗：
+
 | 環境變數 | 用途 |
 |----------|------|
 | `VIRUSTOTAL_API_KEY` | 啟用 VirusTotal 雲端查詢 |
 | `NVIDIA_API_KEY` | 啟用 NVIDIA AI 智慧檢查（`nvidia/nemotron-3.5-lightning-30b-a3b`，端點 `https://integrate.api.nvidia.com/v1`） |
-
-```powershell
-$env:VIRUSTOTAL_API_KEY="你的 Key"
-$env:NVIDIA_API_KEY="你的 Key"
-python src/main.py
-```
 
 ## Nuitka 打包
 
