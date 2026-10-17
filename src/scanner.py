@@ -71,6 +71,11 @@ class ScanReport:
             "risks": [r.to_dict() for r in self.risks],
         }
 
+    def save_report_json(self, output_path: str) -> None:
+        """將報告寫入 JSON 檔案。"""
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+
 
 # ---------------------------------------------------------------------------
 # 本地黑名單
@@ -323,9 +328,8 @@ class Scanner:
         return self.report
 
     def save_report_json(self, output_path: str) -> None:
-        """將報告寫入 JSON 檔案。"""
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(self.report.to_dict(), f, ensure_ascii=False, indent=2)
+        """將報告寫入 JSON 檔案（委派給 ScanReport）。"""
+        self.report.save_report_json(output_path)
 
 
 # ---------------------------------------------------------------------------
