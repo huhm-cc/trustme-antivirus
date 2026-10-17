@@ -25,7 +25,7 @@ jobs:
 
       - name: Build with Nuitka
         run: |
-          python -m nuitka --onefile --windows-disable-console --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
+          python -m nuitka --onefile --windows-disable-console --enable-plugin=tkinter --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4

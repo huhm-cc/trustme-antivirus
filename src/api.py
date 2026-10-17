@@ -12,8 +12,6 @@ import threading
 import time
 from typing import Optional
 
-import webview
-
 from .scanner import (
     SmartScanner,
     ScanResult,
@@ -119,14 +117,24 @@ class BridgeAPI:
     # JS API：資料夾選擇
     # ------------------------------------------------------------------
     def select_folder(self) -> dict:
+        """彈出資料夾選擇對話框（使用 tkinter 原生對話框，避開
+        pywebview 在 js_api 執行緒中彈不出對話框的問題）。"""
         try:
-            result = webview.create_file_dialog(webview.FOLDER_DIALOG)
-            if result:
-                self._last_target_folder = result[0]
-                self.settings["last_folder"] = result[0]
+            import tkinter as tk
+            from tkinter import filedialog
+
+            tk_root = tk.Tk()
+            tk_root.withdraw()
+            tk_root.attributes("-topmost", True)
+            folder = filedialog.askdirectory(title="選擇要掃描的資料夾")
+            tk_root.destroy()
+
+            if folder:
+                self._last_target_folder = folder
+                self.settings["last_folder"] = folder
                 self._save_settings()
-                self._log(f"已選擇掃描目標：{result[0]}", "info")
-                return {"ok": True, "path": result[0]}
+                self._log(f"已選擇掃描目標：{folder}", "info")
+                return {"ok": True, "path": folder}
             return {"ok": False, "path": ""}
         except Exception as exc:  # pylint: disable=broad-except
             return {"ok": False, "path": "", "error": str(exc)}

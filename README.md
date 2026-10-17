@@ -101,7 +101,7 @@ python src/main.py
 
 ```powershell
 pip install -r requirements.txt
-python -m nuitka --onefile --windows-disable-console --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
+python -m nuitka --onefile --windows-disable-console --enable-plugin=tkinter --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
 ```
 
 產出：`dist/TrustmeAntivirus.exe`
