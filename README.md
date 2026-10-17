@@ -104,7 +104,7 @@ python src/main.py
 
 ```powershell
 pip install -r requirements.txt
-python -m nuitka --onefile --windows-console-mode=hide --mingw64 --enable-plugin=tkinter --windows-icon-from-ico=icon.ico --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
+python -m nuitka --onefile --windows-console-mode=hide --mingw64 --enable-plugins=tkinter --windows-icon-from-ico=icon.ico --assume-yes-for-downloads --include-data-dir=src/web=web --output-dir=dist --output-filename=TrustmeAntivirus.exe src/main.py
 ```
 
 產出：`dist/TrustmeAntivirus.exe`
