@@ -2,7 +2,6 @@
 
 let api = null;
 let lastLogIndex = 0;
-let pollTimer = null;
 
 /* ---------- 初始化 ---------- */
 window.addEventListener("pywebviewready", init);
@@ -68,9 +67,9 @@ function bindScanControls() {
 }
 
 /* ---------- 狀態輪詢 ---------- */
+let isScanningNow = false;
+
 function startPolling() {
-  if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(poll, 500);
   poll();
 }
 
@@ -78,17 +77,21 @@ async function poll() {
   if (!api) return;
 
   const status = await api.get_status();
+  isScanningNow = status.is_scanning;
   updateStatusUI(status);
 
   const log = await api.get_log(lastLogIndex);
-  for (const line of log.lines) {
-    logLine(line.text, line.level);
-    lastLogIndex = line.index;
+  if (log.lines.length > 0) {
+    appendLogs(log.lines);
+    lastLogIndex = log.lines[log.lines.length - 1].index;
   }
 
   for (const n of status.notifications) {
     showToast(n.text, n.kind);
   }
+
+  // 動態輪詢：掃描中 500ms，閒置 1500ms（降低 CPU 佔用）
+  setTimeout(poll, status.is_scanning ? 500 : 1500);
 }
 
 function updateStatusUI(s) {
@@ -112,8 +115,10 @@ function updateStatusUI(s) {
   // 進度條
   const pct = Math.round(s.progress * 100);
   document.getElementById("progress-fill").style.width = `${pct}%`;
+
+  const currentFile = s.current_file ? s.current_file.split(/[\\/]/).pop() : "";
   document.getElementById("progress-text").textContent = s.is_scanning
-    ? `掃描中 ${s.scanned}/${s.total}（${pct}%）`
+    ? `掃描中 ${s.scanned}/${s.total}（${pct}%）${currentFile ? " — " + currentFile : ""}`
     : (s.last_scan_finished_at ? `上次掃描完成於 ${s.last_scan_finished_at}` : "準備就緒");
 
   // 統計
@@ -138,12 +143,20 @@ function updateStatusUI(s) {
 
 /* ---------- 日誌 ---------- */
 function logLine(text, level) {
+  appendLogs([{ text, level }]);
+}
+
+function appendLogs(lines) {
   const box = document.getElementById("scan-log");
-  const div = document.createElement("div");
-  div.className = `log-line ${level}`;
-  div.textContent = text;
-  box.appendChild(div);
-  if (box.children.length > 2000) box.removeChild(box.firstChild);
+  const frag = document.createDocumentFragment();
+  for (const line of lines) {
+    const div = document.createElement("div");
+    div.className = `log-line ${line.level}`;
+    div.textContent = line.text;
+    frag.appendChild(div);
+  }
+  box.appendChild(frag);          // 批次插入，只觸發一次重排
+  while (box.children.length > 1500) box.removeChild(box.firstChild);
   box.scrollTop = box.scrollHeight;
 }
 

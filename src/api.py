@@ -42,6 +42,7 @@ class BridgeAPI:
         self._scan_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self.is_scanning = False
+        self._current_file = ""
         self.last_scan_finished_at = ""
         self._last_target_folder = ""
         self._last_scan_mode = "full"
@@ -213,7 +214,13 @@ class BridgeAPI:
             self.is_scanning = False
 
     def _on_file_scanned(self, result: ScanResult) -> None:
-        """掃描回調：寫入日誌（由掃描執行緒呼叫）。"""
+        """掃描回調：寫入日誌（由掃描執行緒呼叫）。
+
+        安全檔案不逐行寫入日誌（只計數），避免海量檔案時
+        前端 DOM 更不及造成介面卡頓。
+        """
+        self._current_file = result.path
+
         if result.status == "error":
             self._log(f"[錯誤] {result.path} - {result.error_message}", "error")
             return
@@ -233,8 +240,7 @@ class BridgeAPI:
             )
             if result.ai_reasoning:
                 self._log(f"    🤖 AI 分析：{result.ai_reasoning}", "info")
-        else:
-            self._log(f"[安全] {result.path}", "safe")
+        # 安全檔案：不寫日誌，僅由 get_status 的計數呈現
 
     # ------------------------------------------------------------------
     # JS API：狀態輪詢
@@ -262,6 +268,7 @@ class BridgeAPI:
             "errors": errors,
             "safe": scanned - risks - errors if scanned > risks + errors else 0,
             "progress": (scanned / total) if total > 0 else 0,
+            "current_file": self._current_file,
             "last_scan_finished_at": self.last_scan_finished_at,
             "target_folder": self._last_target_folder,
             "mode": self._last_scan_mode,
